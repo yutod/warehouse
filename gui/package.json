@@ -9,6 +9,7 @@
   },
   "proxy": "http://localhost:3001",
   "dependencies": {
+    "@fortawesome/fontawesome-free": "^5.7.2",
     "@types/axios": "^0.14.0",
     "@types/execa": "^0.9.0",
     "@types/graphql": "^14.0.5",
@@ -16,6 +17,7 @@
     "axios": "^0.18.0",
     "execa": "^1.0.0",
     "graphql": "^14.1.1",
+    "material-design-icons-iconfont": "^4.0.5",
     "vue": "^2.5.22",
     "vue-apollo": "^3.0.0-beta.28",
     "vue-axios": "^2.1.4",

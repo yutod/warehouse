@@ -3,10 +3,11 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"github.com/yutod/warehouse/api"
 )
 
 var cfgFile string
@@ -14,18 +15,72 @@ var cfgFile string
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "warehouse",
-	Short: "A brief description of your application",
-	// 	Long: `A longer description that spans multiple lines and likely contains
-	// examples and usage of using your application. For example:
-
-	// Cobra is a CLI library for Go that empowers applications.
-	// This application is a tool to generate the needed files
-	// to quickly create a Cobra application.`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
+	Short: "Warehouse is a great homebrew management tool",
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println(args)
 	},
+}
+
+var initCmd = &cobra.Command{
+	Use:   "init",
+	Short: "Initialize application",
+	Args:  cobra.MinimumNArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		out, _ := exec.Command("pwd").Output()
+		command := exec.Command("yarn", "install")
+		dir := string(out)
+		dir = strings.TrimSuffix(dir, "\n") + "/gui"
+		command.Dir = dir
+		out1, err := command.Output()
+		if err != nil {
+			fmt.Println("Please make sure 'yarn' command is available")
+		} else {
+			fmt.Println(string(out1))
+		}
+		os.Exit(0)
+	},
+}
+
+var runCmd = &cobra.Command{
+	Use:   "run",
+	Short: "Start Homebrew Client - Warehouse!!! -",
+	Args:  cobra.MinimumNArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+		pwd, _ := exec.Command("pwd").Output()
+		baseDir := strings.TrimSuffix(string(pwd), "\n")
+
+		// build
+		command := exec.Command("./node_modules/.bin/vue-cli-service", "build", "./src/main.ts")
+		command.Dir = baseDir + "/gui"
+		exec.Command("rm", "-rf", baseDir+"/gui/node_modules/.cache").Run()
+		out, err := command.CombinedOutput()
+		if err != nil {
+			fmt.Println(err.Error())
+			fmt.Println("Please make sure './gui/node_modules/.bin/vue-cli-service' command is available")
+			os.Exit(1)
+		} else {
+			fmt.Println(string(out))
+		}
+
+		// serve
+		// command1 := exec.Command("./node_modules/.bin/vue-cli-service", "serve")
+		// command1.Dir = baseDir + "/gui"
+		// command1.Run()
+		// out1, err := command1.CombinedOutput()
+		// if err != nil {
+		// 	fmt.Println(err.Error())
+		// 	fmt.Println("Please make sure './gui/node_modules/.bin/vue-cli-service' command is available")
+		// 	os.Exit(1)
+		// } else {
+		// 	fmt.Println(string(out1))
+		// }
+
+		api.Start()
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(initCmd, runCmd)
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -37,41 +92,30 @@ func Execute() {
 	}
 }
 
-func init() {
-	cobra.OnInitialize(initConfig)
+// func init() {
+// cobra.OnInitialize(initConfig)
+// rootCmd.PersistentFlags().StringVar(&cfgFile, "init", "", "")
+// }
 
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.warehouse.yaml)")
+// func initConfig() {
+// 	if cfgFile != "" {
+// 		viper.SetConfigFile(cfgFile)
+// 	} else {
+// 		home, err := homedir.Dir()
+// 		if err != nil {
+// 			fmt.Println(err)
+// 			os.Exit(1)
+// 		}
 
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-}
+// 		// Search config in home directory with name ".cobra" (without extension).
+// 		viper.AddConfigPath(home)
+// 		viper.SetConfigName(".cobra")
+// 	}
 
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
+// 	viper.AutomaticEnv() // read in environment variables that match
 
-		// Search config in home directory with name ".warehouse" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".warehouse")
-	}
-
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	}
-}
+// 	// If a config file is found, read it in.
+// 	if err := viper.ReadInConfig(); err == nil {
+// 		fmt.Println("Using config file:", viper.ConfigFileUsed())
+// 	}
+// }
