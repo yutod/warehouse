@@ -35,7 +35,7 @@ export default Vue.extend({
       version: '',
       data: {},
       // version: '',
-      // formulas: [],
+      formulas: [],
     }
   },
   created() {

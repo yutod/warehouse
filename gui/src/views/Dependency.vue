@@ -45,8 +45,32 @@
         </v-tab-item>
         <v-tab-item :key="'available'">
           <v-card>
-            <v-card-text>bb</v-card-text>
+            <v-list two-line>
+              <v-list-tile v-for="formula in formulaPerPage(page)" :key="formula.name" class="my-3">
+                <v-list-tile-content>
+                  <v-list-tile-title
+                    class="title font-weight-thin my-1"
+                    color="blue-grey darken-1"
+                  >{{ formula.name }}</v-list-tile-title>
+                  <v-list-tile-sub-title>
+                    <v-layout row xs12>
+                      <v-flex xs3 align-self-center>
+                        <span class="subheading">stable version:
+                          <span class="font-weight-bold">{{ formula.stable }}</span>
+                        </span>
+                      </v-flex>
+                      <v-flex align-self-center>
+                        <v-btn round outline color="indigo">Install</v-btn>
+                      </v-flex>
+                    </v-layout>
+                  </v-list-tile-sub-title>
+                </v-list-tile-content>
+              </v-list-tile>
+            </v-list>
           </v-card>
+          <div class="text-xs-center pa-3">
+            <v-pagination v-model="page" :length="maxPage()" :total-visible="10"></v-pagination>
+          </div>
         </v-tab-item>
       </v-tabs-items>
       <!-- <v-parallax dark src="/brew.jpg"> -->
@@ -76,15 +100,57 @@
   <!-- </v-parallax> -->
 
 <script lang='ts'>
-import Vue from 'vue'
+import Vue, { PropOptions } from 'vue'
+import { formulaEndpoint } from '../constants'
+
+const countPerPage = 20
+
+interface Formula {
+  name: string,
+  stable: string,
+}
+type Formulas = Formula[]
+interface Response {
+  name: string,
+  versions: Versions,
+}
+interface Versions {
+  stable: string,
+}
 
 export default Vue.extend({
   name: 'Dependency',
-  props: { data: Object },
+  props: {
+    data: Object,
+    // formulas: Array as PropOptions<Formula[]>,
+  },
   data() {
     return {
       model: null,
+      page: 1,
+      formulas: [] as Formulas,
     }
+  },
+  methods: {
+    maxPage(): number {
+      return Math.floor(this.formulas.length / countPerPage)
+    },
+    formulaPerPage(page: number): Formula[] {
+      const startIndex: number = countPerPage * page
+
+      return this.formulas.slice(startIndex, startIndex + countPerPage)
+    },
+  },
+  created() {
+    Vue.axios.get(`${formulaEndpoint}`).then((response) => {
+      response.data.forEach((element: Response) => {
+        const formula: Formula = {
+          name: element.name,
+          stable: element.versions.stable,
+        }
+        this.formulas.push(formula)
+      })
+    })
   },
 })
 </script>
