@@ -14,8 +14,6 @@ import (
 type FormulaInfo struct {
 	Name    string
 	Version Version
-	// Version string
-	// Latest  string
 }
 
 type Version struct {
@@ -28,7 +26,7 @@ var formulaType = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		"name":    &graphql.Field{Type: graphql.String},
 		"version": &graphql.Field{Type: versionType},
-		// "latest":  &graphql.Field{Type: graphql.String},
+		"latest":  &graphql.Field{Type: graphql.String},
 	},
 })
 
@@ -64,7 +62,6 @@ var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 			Description: "Homebrew doctor",
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 				out, err := exec.Command("brew", "doctor").CombinedOutput()
-				// fmt.Printf("version result: %s\n", string(out))
 				if err != nil {
 					fmt.Println(err.Error())
 					return "cannot get version", nil
@@ -121,7 +118,6 @@ var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 					formulas = append(formulas, formula)
 				}
 
-				fmt.Printf("formulas: %v", formulas)
 				return formulas, nil
 			},
 		},

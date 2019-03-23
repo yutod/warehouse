@@ -25,6 +25,17 @@ import Vue from 'vue'
 import Navigation from '@/components/Navigation.vue'
 import { apiEndpoint } from './constants'
 
+interface ApiData {
+  version?: string,
+  installed?: {
+    name?: string,
+    version?: {
+      current?: string,
+      latest?: string,
+    },
+  },
+}
+
 export default Vue.extend({
   name: 'app',
   components: {
@@ -33,17 +44,14 @@ export default Vue.extend({
   data() {
     return {
       version: '',
-      data: {},
+      data: {} as ApiData,
       // version: '',
       formulas: [],
     }
   },
   created() {
-    Vue.axios.get(`${apiEndpoint}?query={version,installed{name,version{current,latest}}}`).then((response) => {
-      // console.log(response.data.data)
+    Vue.axios.get(`${apiEndpoint}?query={version,installed{name,version{current,latest}}}`).then((response: any) => {
       this.data = response.data.data
-      // this.version = response.data.data.version
-      // this.formulas = response.data.data.formulas
     })
   },
 })
