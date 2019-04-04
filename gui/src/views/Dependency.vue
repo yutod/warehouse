@@ -31,12 +31,15 @@
                           </span>
                         </v-flex>
                         <v-flex xs3 align-self-center>
-                          <span class="subheading">latest:
+                          <span class="subheading mx-2">latest:
                             <span class="font-weight-bold">{{ item.version.latest }}</span>
                           </span>
+                          <template v-if="isExistNewerVersion(item)">
+                            <v-icon :size="15" color="orange darken-2" class="mb-1">fas fa-exclamation-circle</v-icon>
+                          </template>
                         </v-flex>
                         <v-flex xs3 align-self-center>
-                          <v-icon :size="15" color="green" class="text-md-center">fas fa-check</v-icon>
+                          <v-icon :size="15" color="green" class="mb-1">fas fa-check</v-icon>
                           <span class="subheading mx-2">Installed</span>
                         </v-flex>
                         <v-flex align-self-center>
@@ -157,20 +160,28 @@ export default Vue.extend({
   },
   methods: {
     maxPage(): number {
-      return Math.floor(this.filteredFormula.length / countPerPage)
+      const remainder = this.filteredFormula.length % countPerPage
+      return Math.floor(this.filteredFormula.length / countPerPage) + (remainder !== 0 ? 1 : 0)
     },
     formulaPerPage(page: number): Formula[] {
       const startIndex: number = countPerPage * (page - 1)
 
       return this.filteredFormula.slice(startIndex, startIndex + countPerPage)
     },
+    isExistNewerVersion(item): boolean {
+      const newest: Formula = this.formulas.find((formula: Formula) => item.name === formula.name)
+
+      return newest !== undefined && item.version.latest !== newest.stable
+    },
   },
   computed: {
     filteredFormula(): Formulas {
       if (this.searchKeyword && this.searchKeyword.length > 0) {
-        return this.formulas.filter((formula) =>
-          this.searchKeyword.includes(formula.name),
-        )
+        this.page = 1
+        const filtered = this.formulas.filter((formula) => this.searchKeyword.includes(formula.name))
+        const remainder = filtered.length % countPerPage
+        this.page += remainder !== 0 ? Math.floor(filtered.length / countPerPage) : 0
+        return filtered
       }
       return this.formulas
     },
