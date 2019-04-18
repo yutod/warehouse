@@ -2,21 +2,12 @@
   <div id="app">
     <v-app>
       <Navigation :version="version"/>
-      <!-- <Navigation :version="data.version" /> -->
-      <!-- <v-toolbar app></v-toolbar> -->
       <v-content>
-        <!-- <v-parallax src="/bg_home1.jpg" hight="300"> -->
           <v-container grid-list-xl fluid fill-height>
             <router-view :data="data"></router-view>
           </v-container>
-        <!-- </v-parallax> -->
       </v-content>
     </v-app>
-    <!-- <div id="nav"> -->
-    <!-- <router-link to="/">Home</router-link> | -->
-    <!-- <router-link to="/about">About</router-link> -->
-    <!-- </div> -->
-    <!-- <router-view /> -->
   </div>
 </template>
 
@@ -26,14 +17,14 @@ import Navigation from '@/components/Navigation.vue'
 import { apiEndpoint } from './constants'
 
 interface ApiData {
-  version?: string,
-  installed?: {
-    name?: string,
-    version?: {
-      current?: string,
-      latest?: string,
-    },
-  },
+ version?: string,
+ installed?: {
+   name?: string,
+   version?: {
+     current?: string,
+     latest?: string,
+   },
+ },
 }
 
 export default Vue.extend({

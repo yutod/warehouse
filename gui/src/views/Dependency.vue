@@ -139,6 +139,13 @@ interface Response {
 interface Versions {
   stable: string,
 }
+interface Installed {
+    name: string,
+    version: {
+      current: string,
+      latest: string,
+    },
+}
 
 export default Vue.extend({
   name: 'Dependency',
@@ -168,8 +175,8 @@ export default Vue.extend({
 
       return this.filteredFormula.slice(startIndex, startIndex + countPerPage)
     },
-    isExistNewerVersion(item): boolean {
-      const newest: Formula = this.formulas.find((formula: Formula) => item.name === formula.name)
+    isExistNewerVersion(item: Installed): boolean {
+      const newest: Formula | undefined = this.formulas.find((formula: Formula) => item.name === formula.name)
 
       return newest !== undefined && item.version.latest !== newest.stable
     },
