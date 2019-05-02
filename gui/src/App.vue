@@ -3,9 +3,9 @@
     <v-app>
       <Navigation :version="version"/>
       <v-content>
-          <v-container grid-list-xl fluid fill-height>
-            <router-view :data="data"></router-view>
-          </v-container>
+        <v-container grid-list-xl fluid fill-height>
+          <router-view :data="data" :isLatest="isLatest"></router-view>
+        </v-container>
       </v-content>
     </v-app>
   </div>
@@ -14,17 +14,18 @@
 <script lang='ts'>
 import Vue from 'vue'
 import Navigation from '@/components/Navigation.vue'
-import { apiEndpoint } from './constants'
+import { apiEndpoint, githubApiEndpoint, homebrewEndpoint } from './constants'
 
 interface ApiData {
- version?: string,
- installed?: {
-   name?: string,
-   version?: {
-     current?: string,
-     latest?: string,
-   },
- },
+  latest?: string,
+  version?: string,
+  installed?: {
+    name?: string,
+    version?: {
+      current?: string,
+      latest?: string,
+    },
+  },
 }
 
 export default Vue.extend({
@@ -41,9 +42,28 @@ export default Vue.extend({
     }
   },
   created() {
-    Vue.axios.get(`${apiEndpoint}?query={version,installed{name,version{current,latest}}}`).then((response: any) => {
-      this.data = response.data.data
+    const data: ApiData = {}
+    Vue.axios.get(`${githubApiEndpoint}${homebrewEndpoint}`).then((response: any) => {
+      data.latest = response.data.name
+      this.data = Object.assign({}, data)
     })
+    Vue.axios.get(`${apiEndpoint}?query={version}`).then((response: any) => {
+      data.version = response.data.data.version
+      this.data = Object.assign({}, data)
+    })
+    Vue.axios.get(`${apiEndpoint}?query={installed{name,version{current,latest}}}`).then((response: any) => {
+      data.installed = response.data.data.installed
+      this.data = Object.assign({}, data)
+    })
+  },
+  computed: {
+    isLatest(): boolean {
+      if (this.data.version === undefined) {
+        return false
+      }
+      const current: string[] = this.data.version.split(' ')
+      return this.data.latest === current[1]
+    },
   },
 })
 </script>

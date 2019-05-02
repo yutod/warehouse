@@ -73,6 +73,12 @@
           </v-dialog>
         </v-tab-item>
         <v-tab-item :key="'available'">
+          <v-alert :value="isLatest" color="teal accent-4" icon="check_circle" outline>
+            Ready to install stable version !!
+          </v-alert>
+          <v-alert :value="!isLatest" color="deep-orange darken-2" icon="priority_high" outline>
+            Recommend to update homebrew ... ( Cannot install stable version now )
+          </v-alert>
           <v-flex offset-xs1 xs10>
             <v-card-text>
               <v-autocomplete
@@ -151,6 +157,7 @@ export default Vue.extend({
   name: 'Dependency',
   props: {
     data: Object,
+    isLatest: Boolean,
     // formulas: Array as PropOptions<Formula[]>,
   },
   data() {

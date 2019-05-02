@@ -13,9 +13,11 @@
           </v-flex>
           <v-flex xs1>
             <div class="ma-1 headline font-weight-thin">{{ data.version }}</div>
+            <div v-show="isLatest" class="teal accent-2 font-italic">ready to brew!!</div>
+            <div v-show="!isLatest" class="yellow accent-2 font-italic">recommend to update brew ...</div>
           </v-flex>
           <v-flex>
-            <v-btn outline large color="indigo">Update (2.0.2)</v-btn>
+            <v-btn outline large color="indigo" :disabled="isLatest">Update ({{ data.latest }})</v-btn>
             <!-- <div class="ma-3 headline font-weight-thin">{{ data.version }}</div> -->
           </v-flex>
         </v-layout>
@@ -81,7 +83,10 @@ import { apiEndpoint } from '../constants'
 
 export default Vue.extend({
   name: 'home',
-  props: { data: Object },
+  props: {
+    data: Object,
+    isLatest: Boolean,
+  },
   components: {
     HelloWorld,
   },
