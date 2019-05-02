@@ -21,6 +21,12 @@ type Version struct {
 	Latest  string
 }
 
+type InstallResult struct {
+	Name    string
+	Version string
+	Status  bool
+}
+
 var formulaType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Formula",
 	Fields: graphql.Fields{
@@ -35,6 +41,15 @@ var versionType = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		"current": &graphql.Field{Type: graphql.String},
 		"latest":  &graphql.Field{Type: graphql.String},
+	},
+})
+
+var installType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "Install",
+	Fields: graphql.Fields{
+		"name":    &graphql.Field{Type: graphql.String},
+		"version": &graphql.Field{Type: graphql.String},
+		"status":  &graphql.Field{Type: graphql.Boolean},
 	},
 })
 
@@ -124,8 +139,54 @@ var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 	},
 })
 
+var rootMutation = graphql.NewObject(graphql.ObjectConfig{
+	Name: "RootMutation",
+	Fields: graphql.Fields{
+		"install": &graphql.Field{
+			Type:        installType,
+			Description: "Install formula",
+			Args: graphql.FieldConfigArgument{
+				"name": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
+				"version": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
+			},
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				var result = InstallResult{Name: "", Version: "", Status: false}
+				name, isOk := params.Args["name"].(string)
+				if !isOk {
+					return result, nil
+				}
+				fmt.Printf("Param name: %v \n", name)
+				// fmt.Printf("Param version: %v \n", params.Args["version"].(string))
+				result.Name = name
+				out, err := exec.Command("brew", "install", name).CombinedOutput()
+				if err != nil {
+					fmt.Println(err.Error())
+					return "cannot get version", nil
+				}
+				stdout := string(out)
+				lines := strings.Split(stdout, "\n")
+				versionLine := strings.Split(lines[len(lines)-2], " ")
+				fmt.Printf("versionLine: %v\n", versionLine)
+				repoInfo := strings.Split(versionLine[2], "/")
+				version := strings.TrimSuffix(repoInfo[len(repoInfo)-1], ":")
+				fmt.Printf("version: %v\n", version)
+
+				result.Version = version
+				result.Status = true
+
+				return result, nil
+			},
+		},
+	},
+})
+
 var schema, _ = graphql.NewSchema(graphql.SchemaConfig{
-	Query: rootQuery,
+	Query:    rootQuery,
+	Mutation: rootMutation,
 })
 
 func executeQuery(query string, schema graphql.Schema) *graphql.Result {

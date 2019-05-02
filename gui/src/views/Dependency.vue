@@ -110,7 +110,19 @@
                         </span>
                       </v-flex>
                       <v-flex align-self-center>
-                        <v-btn round outline color="indigo">Install</v-btn>
+                        <v-btn
+                          round
+                          outline
+                          color="indigo"
+                          :disabled="isInstalled(formula.name)"
+                          :loading="isInstalling(formula.name)"
+                          @click="install(formula.name, formula.stable)">{{ isInstalled(formula.name) ? 'Installed' : 'Install' }}</v-btn>
+                        <v-chip :value="versionOfInstalledNow(formula.name) !== ''" color="teal" text-color="white">
+                          <v-avatar>
+                            <v-icon>check_circle</v-icon>
+                          </v-avatar>
+                          {{ versionOfInstalledNow(formula.name) }}
+                        </v-chip>
                       </v-flex>
                     </v-layout>
                   </v-list-tile-sub-title>
@@ -129,7 +141,7 @@
 
 <script lang='ts'>
 import Vue, { PropOptions } from 'vue'
-import { formulaEndpoint } from '../constants'
+import { formulaEndpoint, apiEndpoint } from '../constants'
 
 const countPerPage = 20
 
@@ -163,6 +175,8 @@ export default Vue.extend({
   data() {
     return {
       isEditing: false,
+      installingLibs: [] as string[],
+      installedNow: {} as {[key: string]: string},
       dialog: false,
       uninstall: '',
       searchKeyword: '',
@@ -187,6 +201,29 @@ export default Vue.extend({
 
       return newest !== undefined && item.version.latest !== newest.stable
     },
+    isInstalled(name: string) {
+      return this.installedLibs.includes(name)
+    },
+    isInstalling(name: string) {
+      return this.installingLibs.includes(name)
+    },
+    versionOfInstalledNow(name: string) {
+      if (this.installedNow[name] === undefined) {
+        return ''
+      }
+
+      return this.installedNow[name]
+    },
+    install(name: string, version: string): void {
+      this.installingLibs.push(name)
+      Vue.axios
+        .get(`${apiEndpoint}?query=mutation+_{install(name:\"${name}\",version:\"${version}\"){name,version,status}}`)
+        .then((response) => {
+          this.installingLibs = this.installingLibs.filter((lib) => lib !== name)
+          this.installedLibs.push(name)
+          this.installedNow[response.data.data.install.name] = response.data.data.install.version
+        })
+    },
   },
   computed: {
     filteredFormula(): Formulas {
@@ -198,6 +235,12 @@ export default Vue.extend({
         return filtered
       }
       return this.formulas
+    },
+    installedLibs(): string[] {
+      if (this.data.installed === undefined) {
+        return []
+      }
+      return this.data.installed.map((lib: Installed) => lib.name)
     },
     isLoading(): boolean {
       return this.data.installed === undefined
