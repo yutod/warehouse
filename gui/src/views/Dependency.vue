@@ -43,10 +43,14 @@
                           <span class="subheading mx-2">Installed</span>
                         </v-flex>
                         <v-flex align-self-center>
-                          <v-btn round outline color="indigo">Upgrade</v-btn>
+                          <v-btn
+                            round
+                            outline
+                            color="indigo"
+                            :disabled="isLatestVersion(item)">Upgrade</v-btn>
                         </v-flex>
                         <v-flex align-self-center>
-                          <v-btn flat icon @click.stop="dialog = true; uninstall = item.name">
+                          <v-btn flat icon @click.stop="dialog = true; deleted = false; uninstall = item.name">
                             <v-icon>far fa-trash-alt</v-icon>
                           </v-btn>
                         </v-flex>
@@ -60,23 +64,37 @@
           </v-card>
           <v-dialog v-model="dialog" max-width="520">
             <v-card>
-              <v-card-title class="headline font-weight-thin" primary-title>Confirm Uninstall</v-card-title>
-              <v-card-text class="title font-weight-light pa-5">Are you sure to uninstall
-                <span class="headline font-weight-medium font-italic">{{ uninstall }}</span> ?
-              </v-card-text>
+              <template v-if="!isDeleted">
+                <v-card-title class="headline font-weight-regular" primary-title>Confirmation</v-card-title>
+                <v-card-text class="title font-weight-light pa-5">Are you sure to uninstall
+                  <span class="headline font-weight-medium font-italic">{{ uninstall }}</span> ?
+                </v-card-text>
+              </template>
+              <template v-else>
+                <v-card-title class="headline font-weight-regular" primary-title>Finished!!</v-card-title>
+                <v-card-text class="title font-weight-light pa-5">
+                  <v-icon :size="25" color="teal accent-2">fas fa-check</v-icon>
+                  Successfully removed<span class="headline font-weight-medium font-italic"> {{ uninstall }} </span>!!
+                </v-card-text>
+              </template>
               <v-card-actions class="pa-4">
                 <v-spacer></v-spacer>
                 <v-btn outline flat="flat" @click="dialog = false">Cancel</v-btn>
-                <v-btn color="error darker-1" @click="dialog = false">Uninstall</v-btn>
+                <v-btn
+                  depressed
+                  color="error darker-1"
+                  :loading="isDeleting(uninstall)"
+                  :disabled="isDeleted"
+                  @click="deleteFormula(uninstall)">Uninstall</v-btn>
               </v-card-actions>
             </v-card>
           </v-dialog>
         </v-tab-item>
         <v-tab-item :key="'available'">
-          <v-alert :value="isLatest" color="teal accent-4" icon="check_circle" outline>
+          <v-alert dismissible :value="isLatest" color="teal accent-4" icon="check_circle" outline>
             Ready to install stable version !!
           </v-alert>
-          <v-alert :value="!isLatest" color="deep-orange darken-2" icon="priority_high" outline>
+          <v-alert dismissible :value="!isLatest" color="deep-orange darken-2" icon="priority_high" outline>
             Recommend to update homebrew ... ( Cannot install stable version now )
           </v-alert>
           <v-flex offset-xs1 xs10>
@@ -116,7 +134,7 @@
                           color="indigo"
                           :disabled="isInstalled(formula.name)"
                           :loading="isInstalling(formula.name)"
-                          @click="install(formula.name, formula.stable)">{{ isInstalled(formula.name) ? 'Installed' : 'Install' }}</v-btn>
+                          @click="installFormula(formula.name, formula.stable)">{{ isInstalled(formula.name) ? 'Installed' : 'Install' }}</v-btn>
                         <v-chip :value="versionOfInstalledNow(formula.name) !== ''" color="teal" text-color="white">
                           <v-avatar>
                             <v-icon>check_circle</v-icon>
@@ -176,8 +194,10 @@ export default Vue.extend({
     return {
       isEditing: false,
       installingLibs: [] as string[],
+      deletingLibs: [] as string[],
       installedNow: {} as {[key: string]: string},
       dialog: false,
+      deleted: false,
       uninstall: '',
       searchKeyword: '',
       model: null,
@@ -201,11 +221,17 @@ export default Vue.extend({
 
       return newest !== undefined && item.version.latest !== newest.stable
     },
+    isLatestVersion(item: Installed): boolean {
+      return item.version.current !== undefined && item.version.current === item.version.latest
+    },
     isInstalled(name: string) {
       return this.installedLibs.includes(name)
     },
     isInstalling(name: string) {
       return this.installingLibs.includes(name)
+    },
+    isDeleting(name: string) {
+      return this.deletingLibs.includes(name)
     },
     versionOfInstalledNow(name: string) {
       if (this.installedNow[name] === undefined) {
@@ -214,7 +240,7 @@ export default Vue.extend({
 
       return this.installedNow[name]
     },
-    install(name: string, version: string): void {
+    installFormula(name: string, version: string): void {
       this.installingLibs.push(name)
       Vue.axios
         .get(`${apiEndpoint}?query=mutation+_{install(name:\"${name}\",version:\"${version}\"){name,version,status}}`)
@@ -222,6 +248,39 @@ export default Vue.extend({
           this.installingLibs = this.installingLibs.filter((lib) => lib !== name)
           this.installedLibs.push(name)
           this.installedNow[response.data.data.install.name] = response.data.data.install.version
+          const newLib: Installed = {
+            name,
+            version: {
+              current: version,
+              latest: version,
+            },
+          }
+          this.data.installed.push(newLib)
+          this.data.installed.sort((a: Installed, b: Installed) => {
+            const charA = a.name.toLowerCase()
+            const charB = b.name.toLowerCase()
+            if (charA > charB) {
+              return 1
+            } else if (charA < charB) {
+              return -1
+            }
+            return 0
+          })
+        })
+    },
+    deleteFormula(name: string): void {
+      this.deletingLibs.push(name)
+      Vue.axios
+        .get(`${apiEndpoint}?query=mutation+_{delete(name:\"${name}\"){name,status}}`)
+        .then((response) => {
+          this.deletingLibs = this.deletingLibs.filter((lib) => lib !== name)
+          if (response.data.data.delete.status) {
+            this.deleted = true
+            this.data.installed = this.data.installed.filter((lib: Installed) => lib.name !== name)
+            if (this.installedNow[name] !== undefined) {
+              delete this.installedNow[name]
+            }
+          }
         })
     },
   },
@@ -244,6 +303,9 @@ export default Vue.extend({
     },
     isLoading(): boolean {
       return this.data.installed === undefined
+    },
+    isDeleted(): boolean {
+      return this.deleted
     },
   },
   created() {

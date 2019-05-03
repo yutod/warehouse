@@ -21,10 +21,15 @@ type Version struct {
 	Latest  string
 }
 
+type UpdateResult struct {
+	Name   string
+	Status bool
+}
+
 type InstallResult struct {
 	Name    string
-	Version string
 	Status  bool
+	Version string
 }
 
 var formulaType = graphql.NewObject(graphql.ObjectConfig{
@@ -48,8 +53,16 @@ var installType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Install",
 	Fields: graphql.Fields{
 		"name":    &graphql.Field{Type: graphql.String},
-		"version": &graphql.Field{Type: graphql.String},
 		"status":  &graphql.Field{Type: graphql.Boolean},
+		"version": &graphql.Field{Type: graphql.String},
+	},
+})
+
+var updateType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "Update",
+	Fields: graphql.Fields{
+		"name":   &graphql.Field{Type: graphql.String},
+		"status": &graphql.Field{Type: graphql.Boolean},
 	},
 })
 
@@ -115,11 +128,14 @@ var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 
 				latestVersions := make(map[string]string)
 				for _, line := range strings.Split(string(out1.Bytes()), "\n") {
+					fmt.Printf("%v\n", line)
 					info := strings.Split(string(line), " ")
 					if info[0] == "" {
 						continue
 					}
-					latestVersions[strings.Trim(info[0], ":")] = info[2]
+					fullName := strings.Split(strings.Trim(info[0], ":"), "/")
+					name := fullName[len(fullName)-1]
+					latestVersions[name] = strings.Trim(info[2], ",")
 				}
 
 				var formulas []FormulaInfo
@@ -154,7 +170,7 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 				},
 			},
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-				var result = InstallResult{Name: "", Version: "", Status: false}
+				var result = InstallResult{Name: "", Status: false, Version: ""}
 				name, isOk := params.Args["name"].(string)
 				if !isOk {
 					return result, nil
@@ -177,6 +193,74 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 
 				result.Version = version
 				result.Status = true
+				fmt.Printf("result: %v\n", result)
+
+				return result, nil
+			},
+		},
+		"upgrade": &graphql.Field{
+			Type:        installType,
+			Description: "Upgrade Formula",
+			Args: graphql.FieldConfigArgument{
+				"name": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
+				"version": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
+			},
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				var result = InstallResult{Name: "", Status: false, Version: ""}
+				name, isOk := params.Args["name"].(string)
+				if !isOk {
+					return result, nil
+				}
+				version, isOk := params.Args["version"].(string)
+				if !isOk {
+					return result, nil
+				}
+				result.Name = name
+				out, err := exec.Command("brew", "upgrade", name).CombinedOutput()
+				if err != nil {
+					fmt.Println(err.Error())
+					return result, nil
+				}
+				for _, line := range strings.Split(string(out), "\n") {
+					info := strings.Split(string(line), " ")
+					if info[0] == name && info[1] == version && info[2] == "->" {
+						result.Version = info[3]
+						result.Status = true
+					}
+				}
+
+				return result, nil
+			},
+		},
+		"delete": &graphql.Field{
+			Type:        updateType,
+			Description: "Delete Formula",
+			Args: graphql.FieldConfigArgument{
+				"name": &graphql.ArgumentConfig{
+					Type: graphql.NewNonNull(graphql.String),
+				},
+			},
+			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
+				var result = UpdateResult{"", false}
+				name, isOk := params.Args["name"].(string)
+				if !isOk {
+					return result, nil
+				}
+				result.Name = name
+				out, err := exec.Command("brew", "uninstall", name).CombinedOutput()
+				if err != nil {
+					fmt.Println(err.Error())
+					return result, nil
+				}
+				stdout := string(out)
+				info := strings.Split(stdout, " ")
+				if info[0] == "Uninstalling" {
+					result.Status = true
+				}
 
 				return result, nil
 			},
