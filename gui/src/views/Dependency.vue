@@ -47,7 +47,9 @@
                             round
                             outline
                             color="indigo"
-                            :disabled="isLatestVersion(item)">Upgrade</v-btn>
+                            :disabled="isLatestVersion(item)"
+                            :loading="isUpgrading(item.name)"
+                            @click="upgradeFormula(item.name, item.version)">Upgrade</v-btn>
                         </v-flex>
                         <v-flex align-self-center>
                           <v-btn flat icon @click.stop="dialog = true; deleted = false; uninstall = item.name">
@@ -194,6 +196,7 @@ export default Vue.extend({
     return {
       isEditing: false,
       installingLibs: [] as string[],
+      upgradingLibs: [] as string[],
       deletingLibs: [] as string[],
       installedNow: {} as {[key: string]: string},
       dialog: false,
@@ -229,6 +232,9 @@ export default Vue.extend({
     },
     isInstalling(name: string) {
       return this.installingLibs.includes(name)
+    },
+    isUpgrading(name: string) {
+      return this.upgradingLibs.includes(name)
     },
     isDeleting(name: string) {
       return this.deletingLibs.includes(name)
@@ -266,6 +272,22 @@ export default Vue.extend({
             }
             return 0
           })
+        })
+    },
+    upgradeFormula(name: string, version: string): void {
+      this.upgradingLibs.push(name)
+      Vue.axios
+        .get(`${apiEndpoint}?query=mutation+_{upgrade(name:\"${name}\",version:\"${version}\"){name,version,status}}`)
+        .then((response) => {
+          this.upgradingLibs = this.upgradingLibs.filter((lib) => lib !== name)
+          const upgrade = response.data.data.upgrade
+          if (upgrade.status) {
+            this.data.installed.forEach((lib: Installed): void => {
+              if (lib.name === name) {
+                lib.version.current = upgrade.version
+              }
+            })
+          }
         })
     },
     deleteFormula(name: string): void {

@@ -74,7 +74,6 @@ var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 			Description: "Homebrew version",
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
 				out, err := exec.Command("brew", "-v").CombinedOutput()
-				// fmt.Printf("version result: %s\n", string(out))
 				if err != nil {
 					fmt.Println(err.Error())
 					return "cannot get version", nil
@@ -128,7 +127,6 @@ var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 
 				latestVersions := make(map[string]string)
 				for _, line := range strings.Split(string(out1.Bytes()), "\n") {
-					fmt.Printf("%v\n", line)
 					info := strings.Split(string(line), " ")
 					if info[0] == "" {
 						continue
@@ -175,8 +173,6 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 				if !isOk {
 					return result, nil
 				}
-				fmt.Printf("Param name: %v \n", name)
-				// fmt.Printf("Param version: %v \n", params.Args["version"].(string))
 				result.Name = name
 				out, err := exec.Command("brew", "install", name).CombinedOutput()
 				if err != nil {
@@ -186,14 +182,11 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 				stdout := string(out)
 				lines := strings.Split(stdout, "\n")
 				versionLine := strings.Split(lines[len(lines)-2], " ")
-				fmt.Printf("versionLine: %v\n", versionLine)
 				repoInfo := strings.Split(versionLine[2], "/")
 				version := strings.TrimSuffix(repoInfo[len(repoInfo)-1], ":")
-				fmt.Printf("version: %v\n", version)
 
 				result.Version = version
 				result.Status = true
-				fmt.Printf("result: %v\n", result)
 
 				return result, nil
 			},
