@@ -16,50 +16,60 @@
           <v-card v-else>
             <v-list two-line>
               <template v-for="(item, index) in data.installed">
-                <v-list-tile :key="item.name">
-                  <v-list-tile-content>
-                    <v-list-tile-title
-                      class="title font-weight-thin my-1"
-                      color="blue-grey darken-1"
-                    >{{ item.name }}</v-list-tile-title>
-                    <v-list-tile-sub-title>
-                      <v-layout row xs12>
-                        <v-flex xs3 align-self-center>
-                          <span class="subheading">
-                            current:
-                            <span class="font-weight-bold">{{ item.version.current }}</span>
-                          </span>
-                        </v-flex>
-                        <v-flex xs3 align-self-center>
-                          <span class="subheading mx-2">latest:
-                            <span class="font-weight-bold">{{ item.version.latest }}</span>
-                          </span>
-                          <template v-if="isExistNewerVersion(item)">
-                            <v-icon :size="15" color="orange darken-2" class="mb-1">fas fa-exclamation-circle</v-icon>
-                          </template>
-                        </v-flex>
-                        <v-flex xs3 align-self-center>
-                          <v-icon :size="15" color="green" class="mb-1">fas fa-check</v-icon>
-                          <span class="subheading mx-2">Installed</span>
-                        </v-flex>
-                        <v-flex align-self-center>
-                          <v-btn
-                            round
-                            outline
-                            color="indigo"
-                            :disabled="isLatestVersion(item)"
-                            :loading="isUpgrading(item.name)"
-                            @click="upgradeFormula(item.name, item.version)">Upgrade</v-btn>
-                        </v-flex>
-                        <v-flex align-self-center>
-                          <v-btn flat icon @click.stop="dialog = true; deleted = false; uninstall = item.name">
-                            <v-icon>far fa-trash-alt</v-icon>
-                          </v-btn>
-                        </v-flex>
-                      </v-layout>
-                    </v-list-tile-sub-title>
-                  </v-list-tile-content>
-                </v-list-tile>
+                <v-hover>
+                  <template slot-scope="{ hover }">
+                    <v-list-tile :key="item.name">
+                      <div v-if="hover && isExistNewerVersion(item)" 
+                           class="d-flex transition-fast-in-fast-out darken-2 hover-label subheading white--text">
+                        <v-chip label outline color="orange">
+                          <v-icon left>label</v-icon><strong>Newer version is now available</strong>
+                        </v-chip>
+                      </div>
+                      <v-list-tile-content>
+                        <v-list-tile-title
+                          class="title font-weight-thin my-1"
+                          color="blue-grey darken-1"
+                        >{{ item.name }}</v-list-tile-title>
+                        <v-list-tile-sub-title>
+                          <v-layout row xs12>
+                            <v-flex xs3 align-self-center>
+                              <span class="subheading">
+                                current:
+                                <span class="font-weight-bold">{{ item.version.current }}</span>
+                              </span>
+                            </v-flex>
+                            <v-flex xs3 align-self-center>
+                              <span class="subheading mx-2">latest:
+                                <span class="font-weight-bold">{{ item.version.latest }}</span>
+                              </span>
+                              <template v-if="isExistNewerVersion(item)">
+                                <v-icon :size="15" color="orange darken-2" class="mb-1">fas fa-exclamation-circle</v-icon>
+                              </template>
+                            </v-flex>
+                            <v-flex xs3 align-self-center>
+                              <v-icon :size="15" color="green" class="mb-1">fas fa-check</v-icon>
+                              <span class="subheading mx-2">Installed</span>
+                            </v-flex>
+                            <v-flex align-self-center>
+                              <v-btn
+                                round
+                                outline
+                                color="indigo"
+                                :disabled="isLatestVersion(item)"
+                                :loading="isUpgrading(item.name)"
+                                @click="upgradeFormula(item.name, item.version)">Upgrade</v-btn>
+                            </v-flex>
+                            <v-flex align-self-center>
+                              <v-btn flat icon @click.stop="dialog = true; deleted = false; uninstall = item.name">
+                                <v-icon>far fa-trash-alt</v-icon>
+                              </v-btn>
+                            </v-flex>
+                          </v-layout>
+                        </v-list-tile-sub-title>
+                      </v-list-tile-content>
+                    </v-list-tile>
+                  </template>
+                </v-hover>
                 <v-divider class="my-3" :key="index"></v-divider>
               </template>
             </v-list>
@@ -344,3 +354,11 @@ export default Vue.extend({
   },
 })
 </script>
+
+<style>
+.hover-label {
+  position: absolute;
+  top: -10%;
+  left: 25%;
+}
+</style>
