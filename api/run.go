@@ -11,6 +11,15 @@ import (
 	"github.com/graphql-go/graphql"
 )
 
+type Doctor struct {
+	Errors, Warnings []Message
+}
+
+type Message struct {
+	Subject string
+	Detail  []string
+}
+
 type FormulaInfo struct {
 	Name    string
 	Version Version
@@ -46,6 +55,14 @@ var versionType = graphql.NewObject(graphql.ObjectConfig{
 	Fields: graphql.Fields{
 		"current": &graphql.Field{Type: graphql.String},
 		"latest":  &graphql.Field{Type: graphql.String},
+	},
+})
+
+var doctorType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "Doctor",
+	Fields: graphql.Fields{
+		"errors":   &graphql.Field{Type: graphql.NewList(graphql.String)},
+		"warnings": &graphql.Field{Type: graphql.NewList(graphql.String)},
 	},
 })
 
@@ -85,18 +102,38 @@ var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 			},
 		},
 		"doctor": &graphql.Field{
-			Type:        graphql.String,
+			Type:        doctorType,
 			Description: "Homebrew doctor",
 			Resolve: func(params graphql.ResolveParams) (interface{}, error) {
-				out, err := exec.Command("brew", "doctor").CombinedOutput()
-				if err != nil {
-					fmt.Println(err.Error())
-					return "cannot get version", nil
-				}
-				stdout := string(out)
-				version := strings.Split(stdout, "\n")
+				var result = Doctor{Errors: []Message{}, Warnings: []Message{}}
+				out, _ := exec.Command("brew", "doctor").CombinedOutput()
 
-				return version[0], nil
+				var log []string
+				var logType *[]Message
+				for _, line := range strings.Split(string(out), "\n") {
+					if strings.Contains(line, "Error:") {
+						logType = &result.Errors
+					} else if strings.Contains(line, "Warning:") {
+						logType = &result.Warnings
+					}
+
+					if strings.Contains(line, "Error:") || strings.Contains(line, "Warning:") {
+						if log != nil {
+							message := Message{Subject: log[0], Detail: log[1:]}
+							*logType = append(*logType, message)
+							log = nil
+						}
+						log = append(log, line)
+					} else if len(log) > 0 && line != "" {
+						log = append(log, line)
+					}
+				}
+				message := Message{Subject: log[0], Detail: log[1:]}
+				*logType = append(*logType, message)
+				log = nil
+				// fmt.Printf("%v", result)
+
+				return result, nil
 			},
 		},
 		"installed": &graphql.Field{
@@ -177,7 +214,7 @@ var rootMutation = graphql.NewObject(graphql.ObjectConfig{
 				out, err := exec.Command("brew", "install", name).CombinedOutput()
 				if err != nil {
 					fmt.Println(err.Error())
-					return "cannot get version", nil
+					return result, nil
 				}
 				stdout := string(out)
 				lines := strings.Split(stdout, "\n")

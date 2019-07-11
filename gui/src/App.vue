@@ -26,6 +26,15 @@ interface ApiData {
       latest?: string,
     },
   },
+  doctor?: {
+    errors: Log[],
+    warnings: Log[],
+  }
+}
+
+interface Log {
+  subject: string,
+  messages: string[],
 }
 
 export default Vue.extend({
@@ -53,6 +62,10 @@ export default Vue.extend({
     })
     Vue.axios.get(`${apiEndpoint}?query={installed{name,version{current,latest}}}`).then((response: any) => {
       data.installed = response.data.data.installed
+      this.data = Object.assign({}, data)
+    })
+    Vue.axios.get(`${apiEndpoint}?query={doctor{errors,warnings}}`).then((response: any) => {
+      data.doctor = response.data.data.doctor
       this.data = Object.assign({}, data)
     })
   },

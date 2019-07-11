@@ -18,7 +18,6 @@
           </v-flex>
           <v-flex>
             <v-btn outline large color="indigo" :disabled="isLatest">Update ({{ data.latest }})</v-btn>
-            <!-- <div class="ma-3 headline font-weight-thin">{{ data.version }}</div> -->
           </v-flex>
         </v-layout>
       </v-sheet>
@@ -36,15 +35,11 @@
             <v-layout xs12 justify-center row wrap>
               <v-flex xs6>
                 <div class="ma-3 headline font-weight-thin">error</div>
-                <div class="ma-3 display-1 font-weight-medium">0</div>
+                <div class="ma-3 display-1 font-weight-mediumx" :class="{ 'pink--text darken-1': errorCount > 0 }">{{ errorCount }}</div>
               </v-flex>
               <v-flex xs6>
                 <div class="ma-3 headline font-weight-thin">warning</div>
-                <div class="ma-3 display-1 font-weight-medium">0</div>
-                <!-- <v-badge color="red" right>
-                  <span slot="badge">6</span>
-                  <v-icon :size="50">fas fa-exclamation</v-icon>
-                </v-badge>-->
+                <div class="ma-3 display-1 font-weight-medium" :class="{'pink--text darken-1': warningCount > 0}">{{ warningCount }}</div>
               </v-flex>
             </v-layout>
           </v-flex>
@@ -90,5 +85,19 @@ export default Vue.extend({
   components: {
     HelloWorld,
   },
+  computed: {
+    errorCount(): number {
+      if (this.data.doctor === undefined) {
+        return 0
+      }
+      return this.data.doctor.errors.length
+    },
+    warningCount(): number {
+      if (this.data.doctor === undefined) {
+        return 0
+      }
+      return this.data.doctor.warnings.length
+    }
+  }
 })
 </script>
