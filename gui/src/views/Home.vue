@@ -39,7 +39,7 @@
               </v-flex>
               <v-flex xs6>
                 <div class="ma-3 headline font-weight-thin">warning</div>
-                <div class="ma-3 display-1 font-weight-medium" :class="{'pink--text darken-1': warningCount > 0}">{{ warningCount }}</div>
+                <div class="ma-3 display-1 font-weight-medium" :class="{'deep-orange--text': warningCount > 0}">{{ warningCount }}</div>
               </v-flex>
             </v-layout>
           </v-flex>
@@ -64,10 +64,38 @@
         </v-layout>
       </v-sheet>
     </v-flex>
+    <template>
+      <v-expansion-panel v-if="errorCount !== 0">
+        <v-expansion-panel-content v-for="(error, index) in data.doctor.errors" :key="index">
+          <template v-slot:header>
+            <div>
+              <span class="subtitle-1 font-weight-bold pink--text darken-1 mr-2">Error: </span>
+              <span class="subtitle-1">{{ format(error.subject) }}</span>
+          </div>
+          </template>
+          <v-card>
+            <v-card-text v-for="(msg, i) in error.detail" :key="i">{{ msg }}</v-card-text>
+          </v-card>
+        </v-expansion-panel-content>
+      </v-expansion-panel>
+      <v-expansion-panel v-if="warningCount !== 0">
+        <v-expansion-panel-content v-for="(warning, index) in data.doctor.warnings" :key="index">
+          <template v-slot:actions>
+            <v-icon color="primary" :size="15">$vuetify.icons.expand</v-icon>
+          </template>
+          <template v-slot:header>
+            <div>
+              <span class="subtitle-1 font-weight-bold deep-orange--text mr-2">Warning: </span>
+              <span class="subtitle-1">{{ format(warning.subject) }}</span>
+          </div>
+          </template>
+          <v-card>
+            <v-card-text class="grey lighten-3 py-2" v-for="(msg, i) in warning.detail" :key="i">{{ msg }}</v-card-text>
+          </v-card>
+        </v-expansion-panel-content>
+      </v-expansion-panel>
+    </template>
   </v-layout>
-  <!-- <img alt="Vue logo" src="../assets/logo.png"> -->
-  <!-- <HelloWorld msg="Welcome to Your Vue.js + TypeScript App"/> -->
-  <!-- </div> -->
 </template>
 
 <script lang='ts'>
@@ -85,6 +113,11 @@ export default Vue.extend({
   components: {
     HelloWorld,
   },
+  methods: {
+    format: function(subject: string): string {
+      return subject.replace(/Warning:|Error:/, "")
+    },
+  },
   computed: {
     errorCount(): number {
       if (this.data.doctor === undefined) {
@@ -96,8 +129,9 @@ export default Vue.extend({
       if (this.data.doctor === undefined) {
         return 0
       }
+      console.log(this.data.doctor)
       return this.data.doctor.warnings.length
-    }
-  }
+    },
+  },
 })
 </script>

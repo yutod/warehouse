@@ -21,7 +21,7 @@
                     <v-list-tile :key="item.name">
                       <div v-if="hover && isExistNewerVersion(item)" 
                            class="d-flex transition-fast-in-fast-out darken-2 hover-label subheading white--text">
-                        <v-chip label outline color="orange">
+                        <v-chip label outline color="deep-orange">
                           <v-icon left>label</v-icon><strong>Newer version is now available</strong>
                         </v-chip>
                       </div>

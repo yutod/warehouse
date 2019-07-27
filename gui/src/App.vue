@@ -64,7 +64,7 @@ export default Vue.extend({
       data.installed = response.data.data.installed
       this.data = Object.assign({}, data)
     })
-    Vue.axios.get(`${apiEndpoint}?query={doctor{errors,warnings}}`).then((response: any) => {
+    Vue.axios.get(`${apiEndpoint}?query={doctor{errors{subject,detail},warnings{subject,detail}}}`).then((response: any) => {
       data.doctor = response.data.data.doctor
       this.data = Object.assign({}, data)
     })

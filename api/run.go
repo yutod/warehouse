@@ -61,8 +61,16 @@ var versionType = graphql.NewObject(graphql.ObjectConfig{
 var doctorType = graphql.NewObject(graphql.ObjectConfig{
 	Name: "Doctor",
 	Fields: graphql.Fields{
-		"errors":   &graphql.Field{Type: graphql.NewList(graphql.String)},
-		"warnings": &graphql.Field{Type: graphql.NewList(graphql.String)},
+		"errors":   &graphql.Field{Type: graphql.NewList(messageType)},
+		"warnings": &graphql.Field{Type: graphql.NewList(messageType)},
+	},
+})
+
+var messageType = graphql.NewObject(graphql.ObjectConfig{
+	Name: "Message",
+	Fields: graphql.Fields{
+		"subject": &graphql.Field{Type: graphql.String},
+		"detail":  &graphql.Field{Type: graphql.NewList(graphql.String)},
 	},
 })
 
@@ -131,7 +139,6 @@ var rootQuery = graphql.NewObject(graphql.ObjectConfig{
 				message := Message{Subject: log[0], Detail: log[1:]}
 				*logType = append(*logType, message)
 				log = nil
-				// fmt.Printf("%v", result)
 
 				return result, nil
 			},
